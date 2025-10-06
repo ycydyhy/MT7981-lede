@@ -15,7 +15,17 @@ name: ⚡ Build lede KONKA-KOMI-A31
 on:
   repository_dispatch:
   workflow_dispatch:
-
+ inputs:
+      LAN_IP:
+        description: 'Set LAN IP Address'
+        required: true
+        default: '192.168.1.1'
+        
+      NO_DOCKERMAN:
+        description: 'Not build luci-app-dockerman'
+        required: true
+        default: false
+        type: boolean
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
@@ -77,6 +87,26 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
+            
+    - name: 设置LAN IP地址（路由器登录地址）
+      run: |
+        cd openwrt
+        SET_IP=${{ github.event.inputs.LAN_IP }}
+        if [[ $SET_IP =~ ^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$ ]]; then
+            #修改immortalwrt.lan关联IP
+            sed -i "s/192\.168\.[0-9]*\.[0-9]*/$SET_IP/g" $(find feeds/luci/modules/luci-mod-system -type f -name "flash.js")
+            #修改默认IP地址
+            sed -i "s/192\.168\.[0-9]*\.[0-9]*/$SET_IP/g" package/base-files/files/bin/config_generate
+            echo "Set LAN IP Address: $SET_IP"
+        else
+            echo "Invalid IP address, use default."
+        fi
+        
+    - name: 取消编译dockerman
+      if: github.event.inputs.NO_DOCKERMAN == 'true'
+      run: |
+        cd openwrt
+        sed -i '/CONFIG_PACKAGE_luci-app-dockerman=y/d' .config
 
     - name: 📦 Download Packages
       id: package
