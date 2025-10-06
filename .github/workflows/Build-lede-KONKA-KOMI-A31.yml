@@ -14,7 +14,8 @@ name: ⚡ Build lede KONKA-KOMI-A31
 on:
   repository_dispatch:
   workflow_dispatch:
- inputs:
+  
+    inputs:
       LAN_IP:
         description: 'Set LAN IP Address'
         required: true
